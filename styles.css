@@ -38,6 +38,14 @@ header {
     left: 0;
     width: 100%;
     z-index: 20;
+    opacity: 0;
+    transform: translateY(-50px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+header.visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 h1 {
@@ -204,19 +212,17 @@ button:hover {
     padding: 1rem 2rem;
     font-size: 1.2rem;
     font-family: 'Macondo', cursive;
-    background-color: #333333; /* Koyu gri arkaplan */
+    background-color: #1b1a1a; /* Koyu gri arkaplan */
     color: var(--text-color);
-    border: none;
+    border: 1px solid #292929;
     border-radius: 15px; /* Daha yuvarlak köşeler */
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .reset-button:hover {
     transform: translateY(-3px);
     background-color: #444444; /* Hover durumunda biraz daha açık gri */
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
 
 .reset-button:active {
@@ -225,7 +231,6 @@ button:hover {
 
 .reset-button.highlight {
     background-color: #555555; /* Daha açık gri renk ile vurgulama */
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
 }
 
 .selection-status {
@@ -292,26 +297,29 @@ button:hover {
 }
 
 .footer {
-    text-align: center;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.7);
-    padding: 1rem 0;
     position: fixed;
     bottom: 1rem;
     left: 0;
     width: 100%;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.8;
     z-index: 20;
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.footer.visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .footer a {
     color: var(--accent-color);
     text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-.footer a:hover {
-    color: #fff;
-    text-decoration: underline;
+    transition: color 0.3s;
 }
 
 @media (max-width: 768px) {

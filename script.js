@@ -5,6 +5,7 @@ const ARENA_API_BASE = 'https://api.are.na/v2';
 let cards = [];
 let revealedCardCount = 0;  // Track how many cards have been revealed
 const MAX_REVEALED_CARDS = 3;  // Maximum number of cards that can be revealed (still 3)
+let queries = []; // Will store queries loaded from data.json
 
 // Three.js variables
 let scene, camera, renderer;
@@ -24,10 +25,43 @@ let isDragging = false;
 let mouseDownTime = 0;
 let mouseDownPosition = { x: 0, y: 0 };
 
+// UI elemanlarını (başlık, açıklama ve footer) göster
+function showUIElements() {
+    const header = document.querySelector('header');
+    const footer = document.querySelector('.footer');
+    
+    if (header) {
+        header.classList.add('visible');
+    }
+    
+    if (footer) {
+        footer.classList.add('visible');
+    }
+}
+
+// UI elemanlarını gizle
+function hideUIElements() {
+    const header = document.querySelector('header');
+    const footer = document.querySelector('.footer');
+    
+    if (header) {
+        header.classList.remove('visible');
+    }
+    
+    if (footer) {
+        footer.classList.remove('visible');
+    }
+}
+
 // Initialize the application
 async function init() {
     try {
-        await fetchRandomContent();
+        // Sayfa başlangıcında UI elemanlarını gizle
+        hideUIElements();
+        
+        // Load queries from data.json
+        await loadQueriesFromJson();
+        
         initThreeJS();
         setupEventListeners();
         
@@ -46,10 +80,39 @@ async function init() {
     }
 }
 
-// Get random letter for search
-function getRandomLetter() {
-    const letters = 'abcdefghijklmnopqrstuvwxyz';
-    return letters[Math.floor(Math.random() * letters.length)];
+// Load queries from data.json
+async function loadQueriesFromJson() {
+    try {
+        const response = await fetch('data.json');
+        if (!response.ok) {
+            throw new Error('Failed to load data.json');
+        }
+        
+        const data = await response.json();
+        
+        // Flatten all query categories into a single array
+        queries = Object.values(data).flat();
+        
+        if (queries.length === 0) {
+            throw new Error('No queries found in data.json');
+        }
+        
+        console.log(`Loaded ${queries.length} queries from data.json`);
+        return true;
+    } catch (error) {
+        console.error('Error loading queries from data.json:', error);
+        // Fallback to some default queries if data.json fails
+        queries = ['art', 'design', 'photography', 'architecture', 'nature'];
+        return false;
+    }
+}
+
+// Get random query from loaded queries
+function getRandomQuery() {
+    if (queries.length === 0) {
+        return 'art'; // Fallback if no queries loaded
+    }
+    return queries[Math.floor(Math.random() * queries.length)];
 }
 
 // Check if content has a valid image
@@ -62,11 +125,10 @@ function hasValidImage(content) {
 // Fetch random content from Are.na
 async function fetchRandomContent() {
     try {
-        // Get random letter and search
-        const randomLetter = getRandomLetter();
-        console.log("Are.na API'den içerik aranıyor. Harf: " + randomLetter);
+        // Get random query from data.json instead of random letter
+        const randomQuery = getRandomQuery();
         
-        const searchResponse = await fetch(`${ARENA_API_BASE}/search?q=${randomLetter}&per=100`);
+        const searchResponse = await fetch(`${ARENA_API_BASE}/search?q=${encodeURIComponent(randomQuery)}&per=100`);
         const searchData = await searchResponse.json();
         
         if (!searchData.blocks || !Array.isArray(searchData.blocks)) {
@@ -82,13 +144,11 @@ async function fetchRandomContent() {
             }))
             .sort((a, b) => a.position - b.position);
 
-        // If no cards found, try another letter
+        // If no cards found, try another query
         if (cards.length === 0) {
-            console.log('No images found, trying another letter...');
             return fetchRandomContent();
         }
         
-        console.log(`${cards.length} adet Are.na içeriği bulundu.`);
         return true;
             
     } catch (error) {
@@ -181,7 +241,7 @@ function createShuffleAnimation() {
         side: THREE.FrontSide
     });
     
-    // Önce kartların ön yüzleri için dokular oluşturalım
+    // Kozmik kartlar için basit renk dokuları oluştur
     const createRandomFrontTexture = () => {
         // Rastgele renk ve doku oluştur
         const randomHue = Math.random() * 360;
@@ -211,35 +271,10 @@ function createShuffleAnimation() {
         return new THREE.CanvasTexture(canvas);
     };
     
-    // Are.na içeriklerinden rastgele görüntüler seç
-    const getRandomArenaTexture = (index) => {
-        if (cards && cards.length > 0) {
-            // Eğer kart sayısından fazla kart oluşturuyorsak, rastgele seç
-            const randomCardIndex = index % cards.length;
-            const cardData = cards[randomCardIndex];
-            
-            if (cardData && cardData.image && cardData.image.display && cardData.image.display.url) {
-                const texture = new THREE.TextureLoader().load(cardData.image.display.url, 
-                    (texture) => {
-                        // Texture başarıyla yüklendi
-                        texture.needsUpdate = true;
-                    },
-                    undefined,
-                    (err) => {
-                        console.error("Arena görseli yüklenemedi:", err);
-                    }
-                );
-                return texture;
-            }
-        }
-        
-        // Are.na içeriği yoksa rastgele doku oluştur
-        return createRandomFrontTexture();
-    };
-    
     // Create materials array for the box
     const createMaterials = (index) => {
-        const frontTexture = getRandomArenaTexture(index);
+        // Kozmik kartlar için sadece rastgele doku oluştur, Are.na içeriği kullanma
+        const frontTexture = createRandomFrontTexture();
         
         return [
             edgeMaterial, // right side
@@ -278,8 +313,7 @@ function createShuffleAnimation() {
         // Point cards toward center
         cardGroup.lookAt(0, 0, 0);
         
-        // Kartı döndürerek ön yüzü (Are.na içerikleri) kameraya baksın
-        // Normalde kartlar merkeze bakıyor, 180 derece çevirince ön yüz görünür
+        // Kartı döndürerek ön yüzü (rastgele doku) kameraya baksın
         cardMesh.rotation.y = Math.PI;
         
         // Add slight random rotation for variety
@@ -380,8 +414,6 @@ function animateCosmicShuffle() {
     
     // Select four cards and place them in position
     function selectAndPlaceFourCards() {
-        console.log("Kartları seçme aşamasına geçildi");
-        
         // Select 4 random cards from the cosmic formation to keep
         const numCardsToKeep = 4;
         const cardsToKeep = [];
@@ -423,12 +455,8 @@ function animateCosmicShuffle() {
                 }
                 
                 cardsToKeep.push(selectedCard);
-                console.log(`Seçilen kart ${i+1}: `, selectedCard.name);
             }
         }
-        
-        console.log(`Seçilen kart sayısı: ${cardsToKeep.length}`);
-        console.log(`Kaybolacak kart sayısı: ${cardsToRemove.length}`);
         
         // Tüm animasyonları aynı anda başlat
         
@@ -524,8 +552,6 @@ function animateCosmicShuffle() {
     
     // Function to move selected cards to final position
     function moveSelectedCardsToPosition(selectedCards) {
-        console.log("Seçilen kartlar tarot düzenine yerleştiriliyor...");
-        
         // Sort the cards by their position index to ensure they animate to correct positions
         selectedCards.sort((a, b) => a.userData.positionIndex - b.userData.positionIndex);
         
@@ -615,12 +641,9 @@ function animateCosmicShuffle() {
                 } else {
                     // Her tamamlanan animasyonu say
                     animationsComplete++;
-                    console.log(`Kart ${posIndex+1} pozisyonlandırma tamamlandı (${animationsComplete}/${totalCards})`);
                     
                     // Tüm animasyonlar tamamlandığında kozmik kartları temizle
                     if (animationsComplete >= totalCards) {
-                        console.log("Tüm kartların pozisyonlandırması tamamlandı");
-                        
                         // Asıl kartları şimdi oluştur
                         createCards();
                         
@@ -633,7 +656,9 @@ function animateCosmicShuffle() {
                         
                         // Animasyon tamamlandı
                         animating = false;
-                        console.log("Tüm kozmik kartlar temizlendi");
+                        
+                        // UI elemanlarını göster
+                        showUIElements();
                     }
                 }
             }
@@ -728,8 +753,6 @@ function createCards() {
         cardMeshes.push(cardGroup);
     }
     
-    console.log("Created cards:", cardMeshes);
-    
     // Instead of animating cards entry, position them directly
     cardMeshes.forEach((cardGroup) => {
         // Set final position directly - no animation
@@ -769,13 +792,11 @@ function flipCard(cardIndex) {
     
     // Check if card is already revealed (one-time only)
     if (cardGroup.userData.revealed) {
-        console.log("Card already revealed, no further interaction");
         return;
     }
     
     // Check if maximum number of cards have been revealed
     if (revealedCardCount >= MAX_REVEALED_CARDS) {
-        console.log("Maximum number of cards already revealed");
         // Instead of showing refresh message, highlight the reset button
         highlightResetButton();
         return;
@@ -811,47 +832,88 @@ function flipCard(cardIndex) {
             label = "";
     }
     
-    // Get a random card from our API cards
-    const randomIndex = Math.floor(Math.random() * cards.length);
-    const cardData = cards[randomIndex];
-    
-    // Load the image texture
-    if (cardData && cardData.image && cardData.image.display && cardData.image.display.url) {
-        const imageUrl = cardData.image.display.url;
-        console.log("Loading image:", imageUrl);
-        
-        // Store the original Are.na URL
-        const arenaUrl = `https://www.are.na/block/${cardData.id}`;
-        cardGroup.userData.arenaUrl = arenaUrl;
-        
-        loadCardTexture(imageUrl).then(texture => {
-            console.log("Texture loaded successfully");
+    // Tıklandığında Are.na'dan içerik çek
+    fetchSingleCardContent().then(cardData => {
+        if (cardData && cardData.image && cardData.image.display && cardData.image.display.url) {
+            const imageUrl = cardData.image.display.url;
             
-            // Store the card's current texture to use when flipping
-            cardGroup.userData.targetTexture = texture;
-            cardGroup.userData.label = label;  // Store the label
+            // Store the original Are.na URL
+            const arenaUrl = `https://www.are.na/block/${cardData.id}`;
+            cardGroup.userData.arenaUrl = arenaUrl;
             
-            // Start the flip animation - the texture will be set halfway through
-            animateCardFlip(cardGroup);
-            
-            // Check if we've reached the limit after successful flip
-            if (revealedCardCount >= MAX_REVEALED_CARDS) {
-                setTimeout(() => {
-                    // Instead of showing refresh message, highlight the reset button
-                    highlightResetButton();
-                }, 1000); // Wait for flip animation to complete
-            }
-        }).catch(error => {
-            console.error('Error loading texture:', error);
-            cardGroup.userData.revealed = false; // Reset selection on error
+            loadCardTexture(imageUrl).then(texture => {
+                // Store the card's current texture to use when flipping
+                cardGroup.userData.targetTexture = texture;
+                cardGroup.userData.label = label;  // Store the label
+                
+                // Start the flip animation - the texture will be set halfway through
+                animateCardFlip(cardGroup);
+                
+                // Check if we've reached the limit after successful flip
+                if (revealedCardCount >= MAX_REVEALED_CARDS) {
+                    setTimeout(() => {
+                        // Instead of showing refresh message, highlight the reset button
+                        highlightResetButton();
+                    }, 1000); // Wait for flip animation to complete
+                }
+            }).catch(error => {
+                console.error('Error loading texture:', error);
+                cardGroup.userData.revealed = false; // Reset selection on error
+                cardGroup.userData.selected = false;
+                revealedCardCount--; // Decrement counter on failure
+            });
+        } else {
+            console.error("No valid image found in card data");
+            cardGroup.userData.revealed = false; // Reset selection
             cardGroup.userData.selected = false;
             revealedCardCount--; // Decrement counter on failure
-        });
-    } else {
-        console.error("No valid image found in card data");
-        cardGroup.userData.revealed = false; // Reset selection
+        }
+    }).catch(error => {
+        console.error('Error fetching card content:', error);
+        cardGroup.userData.revealed = false;
         cardGroup.userData.selected = false;
-        revealedCardCount--; // Decrement counter on failure
+        revealedCardCount--;
+    });
+}
+
+// Tek bir kart için Are.na içeriği çek
+async function fetchSingleCardContent() {
+    try {
+        // Eğer daha önce içerik çekilmişse, onlardan birini kullan
+        if (cards && cards.length > 0) {
+            const randomIndex = Math.floor(Math.random() * cards.length);
+            return cards[randomIndex];
+        }
+        
+        // İlk kez çekiyorsak, API'ye git
+        const randomQuery = getRandomQuery();
+        
+        const searchResponse = await fetch(`${ARENA_API_BASE}/search?q=${encodeURIComponent(randomQuery)}&per=10`); // Sadece 10 içerik çek
+        const searchData = await searchResponse.json();
+        
+        if (!searchData.blocks || !Array.isArray(searchData.blocks)) {
+            throw new Error('Invalid search data received');
+        }
+
+        // Filter for blocks with valid images
+        cards = searchData.blocks
+            .filter(hasValidImage)
+            .map(content => ({
+                ...content,
+                position: Math.random()
+            }))
+            .sort((a, b) => a.position - b.position);
+
+        // If no cards found, try another query
+        if (cards.length === 0) {
+            return fetchSingleCardContent();
+        }
+        
+        const randomIndex = Math.floor(Math.random() * cards.length);
+        return cards[randomIndex];
+    } catch (error) {
+        console.error('Error fetching content:', error);
+        throw error;
     }
 }
 
@@ -915,7 +977,6 @@ function animateCardFlip(cardGroup) {
             }
             
             textureChanged = true;
-            console.log("Changed texture during flip animation");
         }
         
         if (progress < 1) {
@@ -958,8 +1019,8 @@ function createLabelForCard(cardGroup, text) {
     context.fillStyle = gradient;
     context.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw the text
-    context.font = 'bold 32px serif';
+    // Draw the text - 'Macondo' Google fontu kullan
+    context.font = 'bold 32px Macondo, cursive';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     
@@ -1022,7 +1083,7 @@ function createArenaLinkIndicator(cardGroup) {
     context.arc(canvas.width/2, canvas.height/2, 20, 0, Math.PI * 2);
     context.fill();
     
-    context.font = 'bold 26px serif';
+    context.font = 'bold 26px Macondo, cursive';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillStyle = 'white';
