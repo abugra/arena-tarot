@@ -8,61 +8,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Are.na Tarot</h1>
-            <p class="subtitle">Click on a card to reveal your fortune</p>
+            <p class="subtitle">Select three cards to reveal your Past, Present and Future</p>
         </header>
 
-        <div class="deck-container">
-            <div class="deck">
-                <div class="card" id="card1">
-                    <div class="card-inner">
-                        <div class="card-back">🎴</div>
-                        <div class="card-front">
-                            <div class="card-content"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card" id="card2">
-                    <div class="card-inner">
-                        <div class="card-back">🎴</div>
-                        <div class="card-front">
-                            <div class="card-content"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card" id="card3">
-                    <div class="card-inner">
-                        <div class="card-back">🎴</div>
-                        <div class="card-front">
-                            <div class="card-content"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div id="canvas-container" class="canvas-container">
+            <!-- Three.js will render here -->
         </div>
-
-        <div class="reading-container">
-            <div class="reading">
-                <h2>Your Reading</h2>
-                <div class="reading-cards">
-                    <div class="reading-card">
-                        <h3>Past</h3>
-                        <div id="reading1" class="reading-content"></div>
-                    </div>
-                    <div class="reading-card">
-                        <h3>Present</h3>
-                        <div id="reading2" class="reading-content"></div>
-                    </div>
-                    <div class="reading-card">
-                        <h3>Future</h3>
-                        <div id="reading3" class="reading-content"></div>
-                    </div>
-                </div>
-            </div>
+        
+        <div class="reset-container">
+            <button id="reset-button" class="reset-button">Reset Cards</button>
         </div>
     </div>
     <script src="script.js"></script>
