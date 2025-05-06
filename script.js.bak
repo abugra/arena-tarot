@@ -64,8 +64,6 @@ async function fetchRandomContent() {
     try {
         // Get random letter and search
         const randomLetter = getRandomLetter();
-        console.log("Are.na API'den içerik aranıyor. Harf: " + randomLetter);
-        
         const searchResponse = await fetch(`${ARENA_API_BASE}/search?q=${randomLetter}&per=100`);
         const searchData = await searchResponse.json();
         
@@ -87,9 +85,6 @@ async function fetchRandomContent() {
             console.log('No images found, trying another letter...');
             return fetchRandomContent();
         }
-        
-        console.log(`${cards.length} adet Are.na içeriği bulundu.`);
-        return true;
             
     } catch (error) {
         console.error('Error fetching content:', error);
@@ -181,83 +176,23 @@ function createShuffleAnimation() {
         side: THREE.FrontSide
     });
     
-    // Önce kartların ön yüzleri için dokular oluşturalım
-    const createRandomFrontTexture = () => {
-        // Rastgele renk ve doku oluştur
-        const randomHue = Math.random() * 360;
-        const canvas = document.createElement('canvas');
-        canvas.width = 512;
-        canvas.height = 768;
-        const ctx = canvas.getContext('2d');
-        
-        // Gradient arka plan
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, `hsl(${randomHue}, 70%, 40%)`);
-        gradient.addColorStop(1, `hsl(${(randomHue + 40) % 360}, 80%, 30%)`);
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Rastgele şekiller/desenler ekle
-        for (let i = 0; i < 10; i++) {
-            ctx.beginPath();
-            ctx.fillStyle = `hsla(${(randomHue + 180) % 360}, 70%, 60%, 0.3)`;
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * canvas.height;
-            const radius = 20 + Math.random() * 100;
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        
-        return new THREE.CanvasTexture(canvas);
-    };
-    
-    // Are.na içeriklerinden rastgele görüntüler seç
-    const getRandomArenaTexture = (index) => {
-        if (cards && cards.length > 0) {
-            // Eğer kart sayısından fazla kart oluşturuyorsak, rastgele seç
-            const randomCardIndex = index % cards.length;
-            const cardData = cards[randomCardIndex];
-            
-            if (cardData && cardData.image && cardData.image.display && cardData.image.display.url) {
-                const texture = new THREE.TextureLoader().load(cardData.image.display.url, 
-                    (texture) => {
-                        // Texture başarıyla yüklendi
-                        texture.needsUpdate = true;
-                    },
-                    undefined,
-                    (err) => {
-                        console.error("Arena görseli yüklenemedi:", err);
-                    }
-                );
-                return texture;
-            }
-        }
-        
-        // Are.na içeriği yoksa rastgele doku oluştur
-        return createRandomFrontTexture();
-    };
-    
     // Create materials array for the box
-    const createMaterials = (index) => {
-        const frontTexture = getRandomArenaTexture(index);
-        
-        return [
-            edgeMaterial, // right side
-            edgeMaterial, // left side
-            edgeMaterial, // top edge
-            edgeMaterial, // bottom edge
-            new THREE.MeshBasicMaterial({ map: frontTexture, side: THREE.FrontSide }), // front face
-            backMaterial  // back face
-        ];
-    };
+    const materials = [
+        edgeMaterial, // right side
+        edgeMaterial, // left side
+        edgeMaterial, // top edge
+        edgeMaterial, // bottom edge
+        edgeMaterial, // front face 
+        backMaterial  // back face
+    ];
     
     // Create and position the shuffling cards in a cosmic formation
     for (let i = 0; i < numShuffleCards; i++) {
         // Create the card group
         const cardGroup = new THREE.Group();
         
-        // Create the card mesh with materials
-        const cardMesh = new THREE.Mesh(cardGeometry, createMaterials(i));
+        // Create the card mesh
+        const cardMesh = new THREE.Mesh(cardGeometry, materials);
         cardMesh.name = "ShuffleCard_" + i;
         
         // Distribute cards in a spherical galaxy formation
@@ -277,10 +212,6 @@ function createShuffleAnimation() {
         
         // Point cards toward center
         cardGroup.lookAt(0, 0, 0);
-        
-        // Kartı döndürerek ön yüzü (Are.na içerikleri) kameraya baksın
-        // Normalde kartlar merkeze bakıyor, 180 derece çevirince ön yüz görünür
-        cardMesh.rotation.y = Math.PI;
         
         // Add slight random rotation for variety
         cardGroup.rotation.z = Math.random() * Math.PI * 0.1;
@@ -380,8 +311,6 @@ function animateCosmicShuffle() {
     
     // Select four cards and place them in position
     function selectAndPlaceFourCards() {
-        console.log("Kartları seçme aşamasına geçildi");
-        
         // Select 4 random cards from the cosmic formation to keep
         const numCardsToKeep = 4;
         const cardsToKeep = [];
@@ -402,245 +331,27 @@ function animateCosmicShuffle() {
             });
         }
         
-        // Kozmik oluşumdan 4 adet rastgele kart seç
+        // Randomly select 4 cards from the cosmic formation
         for (let i = 0; i < numCardsToKeep; i++) {
             if (cardsToRemove.length > 0) {
                 const randomIndex = Math.floor(Math.random() * cardsToRemove.length);
                 const selectedCard = cardsToRemove.splice(randomIndex, 1)[0];
                 
-                // Seçilen kartı işaretle
+                // Immediately set the position index to ensure cards maintain their order
                 selectedCard.userData.positionIndex = i;
-                selectedCard.userData.selected = true;
-                
-                // Seçilen kartı büyüt ve parlat (görsel gösterim) 
-                selectedCard.scale.set(1.5, 1.5, 1.5); // Seçilmiş kartları büyüt
-                
-                // Kartın ön yüzünü gizle (kademeli olarak), tarot desenini göster
-                // Kozmik kartlardan tarot düzenine geçişi sağlayacak
-                if (selectedCard.children[0]) {
-                    // Bir animasyon oluştur, ön yüzü kadameli olarak gizle
-                    animateCardFlipToBack(selectedCard.children[0]);
-                }
+                selectedCard.userData.highlight = true; // Mark for highlighting
                 
                 cardsToKeep.push(selectedCard);
-                console.log(`Seçilen kart ${i+1}: `, selectedCard.name);
             }
         }
         
-        console.log(`Seçilen kart sayısı: ${cardsToKeep.length}`);
-        console.log(`Kaybolacak kart sayısı: ${cardsToRemove.length}`);
-        
-        // Tüm animasyonları aynı anda başlat
-        
-        // 1. Seçilmeyen kartların uçuş animasyonunu başlat
+        // Make non-selected cards fly away
         cardsToRemove.forEach(card => {
             flyAwayCard(card);
         });
         
-        // 2. Aynı anda seçilen kartları pozisyonlandır
+        // Move selected cards to final position
         moveSelectedCardsToPosition(cardsToKeep);
-    }
-    
-    // Kartın ön yüzünü arka yüze çeviren animasyon
-    function animateCardFlipToBack(cardMesh) {
-        const flipDuration = 800; // ms
-        const flipStartTime = Date.now();
-        const startRotY = cardMesh.rotation.y; // Başlangıç rotasyonu (genelde PI - ön yüz görünür)
-        const targetRotY = 0; // Hedef rotasyon (0 - arka yüz görünür)
-        
-        function updateFlip() {
-            const elapsed = Date.now() - flipStartTime;
-            const progress = Math.min(elapsed / flipDuration, 1);
-            
-            // Yumuşak geçiş için easing fonksiyonu
-            const easedProgress = 1 - Math.pow(1 - progress, 2);
-            
-            // Kartın Y ekseni rotasyonunu güncelle (ön yüzden arka yüze)
-            cardMesh.rotation.y = startRotY + (targetRotY - startRotY) * easedProgress;
-            
-            if (progress < 1) {
-                requestAnimationFrame(updateFlip);
-            }
-        }
-        
-        updateFlip();
-    }
-    
-    // Function to make a card fly away
-    function flyAwayCard(card, callback) {
-        const flyDuration = 500 + Math.random() * 200; // Reduced from 700+300ms to 500+200ms
-        const flyStartTime = Date.now();
-        
-        // Random target position off-screen
-        const targetPos = {
-            x: (Math.random() - 0.5) * 30,
-            y: -10 - Math.random() * 5,
-            z: (Math.random() - 0.5) * 30
-        };
-        
-        const startPos = {
-            x: card.position.x,
-            y: card.position.y,
-            z: card.position.z
-        };
-        
-        function flyAway() {
-            const elapsed = Date.now() - flyStartTime;
-            const progress = Math.min(elapsed / flyDuration, 1);
-            
-            // Easing function
-            const easedProgress = progress < 0.5
-                ? 4 * progress * progress * progress
-                : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-            
-            // Update position
-            card.position.x = startPos.x + (targetPos.x - startPos.x) * easedProgress;
-            card.position.y = startPos.y + (targetPos.y - startPos.y) * easedProgress;
-            card.position.z = startPos.z + (targetPos.z - startPos.z) * easedProgress;
-            
-            // Add some rotation
-            card.rotation.x += 0.03;
-            card.rotation.y += 0.02;
-            card.rotation.z += 0.04;
-            
-            // Fade out by scaling down
-            const fadeScale = 1 - easedProgress * 0.8;
-            card.scale.set(fadeScale, fadeScale, fadeScale);
-            
-            if (progress < 1) {
-                requestAnimationFrame(flyAway);
-            } else {
-                // Remove the card from the scene
-                scene.remove(card);
-                
-                // İşlem tamamlandıysa callback'i çağır
-                if (callback) callback();
-            }
-        }
-        
-        // Uçuş animasyonunu hemen başlat (gecikme olmadan)
-        flyAway();
-    }
-    
-    // Function to move selected cards to final position
-    function moveSelectedCardsToPosition(selectedCards) {
-        console.log("Seçilen kartlar tarot düzenine yerleştiriliyor...");
-        
-        // Sort the cards by their position index to ensure they animate to correct positions
-        selectedCards.sort((a, b) => a.userData.positionIndex - b.userData.positionIndex);
-        
-        // Tarot kartları için final pozisyonları tanımla
-        const spacing = 1.2;
-        const cardWidth = 2;
-        const totalWidth = selectedCards.length * (cardWidth + spacing) - spacing;
-        
-        // Final positions for the cards from left to right
-        const finalPositions = [];
-        for (let i = 0; i < selectedCards.length; i++) {
-            finalPositions.push({
-                x: i * (cardWidth + spacing) - totalWidth / 2 + cardWidth/2,
-                y: 0,
-                z: 0
-            });
-        }
-        
-        // Seçilen kartlar için bir süre izle
-        let animationsComplete = 0;
-        const totalCards = selectedCards.length;
-        
-        // Animate the selected cards moving to their final positions
-        selectedCards.forEach((card, i) => {
-            // Animate card moving to final position based on its assigned position index
-            const posIndex = card.userData.positionIndex;
-            const moveDuration = 600; // Reduced from 1000ms to 600ms
-            const moveStartTime = Date.now();
-            
-            const startPos = {
-                x: card.position.x,
-                y: card.position.y,
-                z: card.position.z
-            };
-            
-            const startRot = {
-                x: card.rotation.x,
-                y: card.rotation.y,
-                z: card.rotation.z
-            };
-            
-            // Başlangıç ölçeği (büyütülmüş kartlar normal boyuta dönecek)
-            const startScale = {
-                x: card.scale.x,
-                y: card.scale.y,
-                z: card.scale.z
-            };
-            
-            // Kartın ön yüzünü gizle, arka yüzü göster (tarot deseni)
-            if (card.children[0] && card.children[0].rotation) {
-                // Kartın mesh'inin rotasyonunu sıfırla - artık ön yüzü (Are.na içeriği) görünmesin
-                // Böylece arka yüzü (tarot deseni) görünecek
-                card.children[0].rotation.y = 0;
-            }
-            
-            function moveToPosition() {
-                const elapsed = Date.now() - moveStartTime;
-                const progress = Math.min(elapsed / moveDuration, 1);
-                
-                // Easing function for smooth movement
-                const easedProgress = 1 - Math.pow(1 - progress, 3);
-                
-                // Arc motion for a more natural movement
-                const arcHeight = 4 * Math.sin(progress * Math.PI);
-                
-                // Use the card's position index to determine its final position
-                const finalPos = finalPositions[posIndex];
-                
-                // Update position with arc motion
-                card.position.x = startPos.x + (finalPos.x - startPos.x) * easedProgress;
-                card.position.y = startPos.y + (finalPos.y - startPos.y) * easedProgress + arcHeight;
-                card.position.z = startPos.z + (finalPos.z - startPos.z) * easedProgress;
-                
-                // Update rotation to face down - kartın arka yüzü üstte olacak
-                card.rotation.x = startRot.x + (Math.PI - startRot.x) * easedProgress;
-                card.rotation.y = startRot.y + (0 - startRot.y) * easedProgress;
-                card.rotation.z = startRot.z + (0 - startRot.z) * easedProgress;
-                
-                // Kartları normal boyuta getir (1.5'ten 1.0'a)
-                const targetScale = 1.0;
-                card.scale.x = startScale.x + (targetScale - startScale.x) * easedProgress;
-                card.scale.y = startScale.y + (targetScale - startScale.y) * easedProgress;
-                card.scale.z = startScale.z + (targetScale - startScale.z) * easedProgress;
-                
-                if (progress < 1) {
-                    requestAnimationFrame(moveToPosition);
-                } else {
-                    // Her tamamlanan animasyonu say
-                    animationsComplete++;
-                    console.log(`Kart ${posIndex+1} pozisyonlandırma tamamlandı (${animationsComplete}/${totalCards})`);
-                    
-                    // Tüm animasyonlar tamamlandığında kozmik kartları temizle
-                    if (animationsComplete >= totalCards) {
-                        console.log("Tüm kartların pozisyonlandırması tamamlandı");
-                        
-                        // Asıl kartları şimdi oluştur
-                        createCards();
-                        
-                        // Tüm kozmik kartları temizle
-                        for (let i = shuffleCards.length - 1; i >= 0; i--) {
-                            scene.remove(shuffleCards[i]);
-                        }
-                        // Diziyi boşalt
-                        shuffleCards = [];
-                        
-                        // Animasyon tamamlandı
-                        animating = false;
-                        console.log("Tüm kozmik kartlar temizlendi");
-                    }
-                }
-            }
-            
-            // Start moving to position immediately
-            moveToPosition();
-        });
     }
 }
 
@@ -1486,4 +1197,5 @@ function gsapLikeScale(object, targetX, targetY, targetZ) {
 }
 
 // Initialize the application when the page loads
+document.addEventListener('DOMContentLoaded', init); 
 document.addEventListener('DOMContentLoaded', init); 
