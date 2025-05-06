@@ -1019,8 +1019,8 @@ function createLabelForCard(cardGroup, text) {
     context.fillStyle = gradient;
     context.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw the text - 'Macondo' Google fontu kullan
-    context.font = 'bold 32px Macondo, cursive';
+    // Draw the text - Use 'Cal Sans' instead of 'Macondo'
+    context.font = 'bold 32px "Cal Sans", sans-serif';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     
@@ -1083,7 +1083,7 @@ function createArenaLinkIndicator(cardGroup) {
     context.arc(canvas.width/2, canvas.height/2, 20, 0, Math.PI * 2);
     context.fill();
     
-    context.font = 'bold 26px Macondo, cursive';
+    context.font = 'bold 26px "Cal Sans", sans-serif';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillStyle = 'white';
