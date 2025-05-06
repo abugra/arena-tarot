@@ -14,7 +14,7 @@
 }
 
 body {
-    font-family: 'Cal Sans', sans-serif;
+    font-family: 'MedievalSharp', cursive;
     background-color: var(--primary-color);
     color: var(--text-color);
     line-height: 1.6;
@@ -166,7 +166,7 @@ h1 {
 button {
     padding: 0.8rem 1.5rem;
     font-size: 1.1rem;
-    font-family: 'Cal Sans', sans-serif;
+    font-family: 'MedievalSharp', cursive;
     background-color: var(--accent-color);
     color: var(--text-color);
     border: none;
@@ -211,7 +211,7 @@ button:hover {
 .reset-button {
     padding: 1rem 2rem;
     font-size: 1.2rem;
-    font-family: 'Cal Sans', sans-serif;
+    font-family: 'MedievalSharp', cursive;
     background-color: #1b1a1a; /* Koyu gri arkaplan */
     color: var(--text-color);
     border: 1px solid #292929;
