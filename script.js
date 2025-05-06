@@ -215,7 +215,8 @@ function createCards() {
             flipped: false,
             selected: false,
             revealed: false,  // Card starts as not revealed
-            cardMesh: cardMesh  // Keep reference to actual mesh for texture updates
+            cardMesh: cardMesh,  // Keep reference to actual mesh for texture updates
+            arenaUrl: null  // Initialize arenaUrl
         };
         
         // Also store parent reference in the mesh
@@ -352,6 +353,10 @@ function flipCard(cardIndex) {
         const imageUrl = cardData.image.display.url;
         console.log("Loading image:", imageUrl);
         
+        // Store the original Are.na URL
+        const arenaUrl = `https://www.are.na/block/${cardData.id}`;
+        cardGroup.userData.arenaUrl = arenaUrl;
+        
         loadCardTexture(imageUrl).then(texture => {
             console.log("Texture loaded successfully");
             
@@ -465,7 +470,7 @@ function animateCardFlip(cardGroup) {
 function createLabelForCard(cardGroup, text) {
     // Cleanup any existing label
     cardGroup.children.forEach(child => {
-        if (child.isTextLabel) {
+        if (child.isTextLabel || child.isArenaLink) {
             cardGroup.remove(child);
         }
     });
@@ -526,6 +531,67 @@ function createLabelForCard(cardGroup, text) {
     
     // Animate the label appearing
     animateLabelAppearance(material);
+    
+    // Also add an Arena link indicator if we have a URL
+    if (cardGroup.userData.arenaUrl) {
+        createArenaLinkIndicator(cardGroup);
+    }
+}
+
+// Create a visual indicator for an Are.na link on the card
+function createArenaLinkIndicator(cardGroup) {
+    // Create canvas for the Are.na icon
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+    
+    // Clear the canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw a small Are.na logo/icon (simplified as "A.")
+    context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    context.beginPath();
+    context.arc(canvas.width/2, canvas.height/2, 20, 0, Math.PI * 2);
+    context.fill();
+    
+    context.font = 'bold 26px serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillStyle = 'white';
+    context.fillText('↓', canvas.width/2, canvas.height/2);
+    
+    // Create a texture from the canvas
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    
+    // Create a material using the texture
+    const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0 // Start invisible for animation
+    });
+    
+    // Create a small plane for the icon
+    const geometry = new THREE.PlaneGeometry(0.5, 0.5);
+    const iconMesh = new THREE.Mesh(geometry, material);
+    iconMesh.isArenaLink = true;
+    
+    // Store the URL in the mesh userdata
+    iconMesh.userData.arenaUrl = cardGroup.userData.arenaUrl;
+    
+    // Position the icon in the top right corner of the card
+    iconMesh.position.x = 0.8;  // Right side
+    iconMesh.position.y = 1.5;  // Top
+    iconMesh.position.z = 0.03; // Slightly in front of the card
+    
+    // Add the icon to the card group
+    cardGroup.add(iconMesh);
+    
+    // Animate the icon appearing (with slight delay)
+    setTimeout(() => {
+        animateLabelAppearance(material);
+    }, 500);
 }
 
 // Animate the label appearing with a mystical effect
@@ -699,8 +765,18 @@ function setupEventListeners() {
         const intersects = raycaster.intersectObjects(allCardMeshes);
         
         if (intersects.length > 0) {
+            // Get the intersected object
+            const intersectedObject = intersects[0].object;
+            
+            // Check if this is an Are.na link indicator
+            if (intersectedObject.isArenaLink && intersectedObject.userData.arenaUrl) {
+                // Open the Are.na URL in a new tab
+                window.open(intersectedObject.userData.arenaUrl, '_blank');
+                return;
+            }
+            
             // Get the parent group of the intersected mesh
-            const intersectedGroup = intersects[0].object.userData.parentGroup;
+            const intersectedGroup = intersectedObject.userData.parentGroup;
             const cardIndex = cardMeshes.indexOf(intersectedGroup);
             
             if (cardIndex !== -1) {
@@ -759,8 +835,24 @@ function setupEventListeners() {
         const containerElement = document.getElementById('canvas-container');
         
         if (intersects.length > 0) {
+            // Get the first intersected object
+            const intersectedObject = intersects[0].object;
+            
+            // Check if we're hovering over an Are.na link indicator
+            if (intersectedObject.isArenaLink) {
+                // If hovering over an Are.na link, use pointer cursor
+                containerElement.style.cursor = 'pointer';
+                
+                // Reset any previously hovered card
+                if (hoveredCard) {
+                    gsapLikeScale(hoveredCard, 1, 1, 1);
+                    hoveredCard = null;
+                }
+                return;
+            }
+            
             // Get the parent group of the intersected mesh
-            const intersectedGroup = intersects[0].object.userData.parentGroup;
+            const intersectedGroup = intersectedObject.userData.parentGroup;
             
             // Change cursor to pointer
             containerElement.style.cursor = 'pointer';

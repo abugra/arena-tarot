@@ -14,7 +14,7 @@
 }
 
 body {
-    font-family: 'Crimson Text', serif;
+    font-family: 'Macondo', cursive;
     background-color: var(--primary-color);
     color: var(--text-color);
     line-height: 1.6;
@@ -23,7 +23,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 2000px;
     margin: 0 auto;
 }
 
@@ -149,7 +149,7 @@ h1 {
 button {
     padding: 0.8rem 1.5rem;
     font-size: 1.1rem;
-    font-family: 'Crimson Text', serif;
+    font-family: 'Macondo', cursive;
     background-color: var(--accent-color);
     color: var(--text-color);
     border: none;
@@ -165,7 +165,7 @@ button:hover {
 
 .canvas-container {
     width: 100%;
-    height: 70vh; /* Taller container */
+    height: 60vh; /* Taller container */
     position: relative;
     overflow: hidden;
     border-radius: 0; /* No border radius */
@@ -188,7 +188,7 @@ button:hover {
 .reset-button {
     padding: 1rem 2rem;
     font-size: 1.2rem;
-    font-family: 'Crimson Text', serif;
+    font-family: 'Macondo', cursive;
     background-color: #333333; /* Koyu gri arkaplan */
     color: var(--text-color);
     border: none;
@@ -274,6 +274,25 @@ button:hover {
     border-style: solid;
     border-color: var(--accent-color);
     box-shadow: 0 0 10px var(--accent-color);
+}
+
+.footer {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 1rem 0;
+}
+
+.footer a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer a:hover {
+    color: #fff;
+    text-decoration: underline;
 }
 
 @media (max-width: 768px) {
