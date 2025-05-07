@@ -1019,8 +1019,8 @@ function createLabelForCard(cardGroup, text) {
     context.fillStyle = gradient;
     context.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw the text - Use 'MedievalSharp' instead of 'Cal Sans'
-    context.font = 'bold 32px "MedievalSharp", cursive';
+    // Draw the text - Use 'Cormorant Unicase' instead of 'DM Sans'
+    context.font = 'bold 32px "Cormorant Unicase", cursive';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     
@@ -1083,7 +1083,7 @@ function createArenaLinkIndicator(cardGroup) {
     context.arc(canvas.width/2, canvas.height/2, 20, 0, Math.PI * 2);
     context.fill();
     
-    context.font = 'bold 26px "MedievalSharp", cursive';
+    context.font = 'bold 26px "Cormorant Unicase", cursive';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillStyle = 'white';
